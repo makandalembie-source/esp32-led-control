@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>LED ESP32 - Contrôle à distance</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+            background: #1a1a2e;
+            color: white;
+        }
+        button {
+            font-size: 24px;
+            padding: 15px 30px;
+            margin: 10px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        .btn-on { background-color: #00ff00; color: black; }
+        .btn-off { background-color: #ff4444; color: white; }
+        input {
+            padding: 10px;
+            font-size: 16px;
+            width: 200px;
+            margin: 20px;
+        }
+        .status {
+            font-size: 20px;
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>💡 Contrôle LED ESP32</h1>
+    
+    <div>
+        <label>Adresse IP de l'ESP32 :</label>
+        <input type="text" id="espIP" placeholder="ex: 192.168.1.42">
+        <button onclick="connecterESP()">Connexion</button>
+    </div>
+    
+    <div id="controles" style="display: none;">
+        <div class="status" id="status">Statut : ---</div>
+        <button class="btn-on" onclick="commander('/allumer')">🔆 ALLUMER</button>
+        <button class="btn-off" onclick="commander('/eteindre')">🔴 ÉTEINDRE</button>
+    </div>
+
+    <script>
+        let espIP = "";
+
+        function connecterESP() {
+            espIP = document.getElementById('espIP').value;
+            if(espIP) {
+                document.getElementById('controles').style.display = 'block';
+                verifierStatut();
+            }
+        }
+
+        function commander(action) {
+            fetch(`http://${espIP}${action}`)
+                .then(() => {
+                    const statusDiv = document.getElementById('status');
+                    if(action === '/allumer') {
+                        statusDiv.innerHTML = 'Statut : 🟢 ALLUMÉE';
+                        statusDiv.style.color = '#00ff00';
+                    } else {
+                        statusDiv.innerHTML = 'Statut : 🔴 ÉTEINTE';
+                        statusDiv.style.color = '#ff4444';
+                    }
+                })
+                .catch(err => console.log('Erreur:', err));
+        }
+
+        function verifierStatut() {
+            fetch(`http://${espIP}/statut`)
+                .then(response => response.text())
+                .then(statut => {
+                    const statusDiv = document.getElementById('status');
+                    if(statut === 'ON') {
+                        statusDiv.innerHTML = 'Statut : 🟢 ALLUMÉE';
+                        statusDiv.style.color = '#00ff00';
+                    } else {
+                        statusDiv.innerHTML = 'Statut : 🔴 ÉTEINTE';
+                        statusDiv.style.color = '#ff4444';
+                    }
+                })
+                .catch(err => console.log('Erreur:', err));
+        }
+        
+        // Vérifier le statut toutes les 3 secondes
+        setInterval(verifierStatut, 3000);
+    </script>
+</body>
+</html>
