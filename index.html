@@ -1,75 +1,314 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>LED ESP32</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>ESP32 - Contrôle LED</title>
     <style>
-        body {
-            font-family: Arial;
-            text-align: center;
-            margin-top: 100px;
-            background: #1a1a2e;
-            color: white;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        button {
-            font-size: 30px;
-            padding: 20px 40px;
-            margin: 20px;
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 25px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #aaa;
+            margin-bottom: 25px;
+        }
+
+        h2 {
+            color: white;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .ip-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px;
             border: none;
             border-radius: 15px;
-            cursor: pointer;
-        }
-        .on { background-color: #00ff00; color: black; }
-        .off { background-color: #ff4444; color: white; }
-        input {
-            padding: 10px;
+            background: #1a1a2e;
+            color: white;
             font-size: 16px;
-            width: 200px;
-            margin: 20px;
+            border: 1px solid #333;
+            text-align: center;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+            font-size: 16px;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn-primary {
+            background: #00ff00;
+            color: black;
+        }
+
+        .btn-on {
+            background: linear-gradient(135deg, #00ff00, #008800);
+            color: white;
+            font-size: 24px;
+            padding: 20px 40px;
+            flex: 1;
+        }
+
+        .btn-off {
+            background: linear-gradient(135deg, #ff4444, #880000);
+            color: white;
+            font-size: 24px;
+            padding: 20px 40px;
+            flex: 1;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .led {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 10px;
+            transition: all 0.1s;
+        }
+
+        .led-on {
+            background: #ff3333;
+            box-shadow: 0 0 30px #ff3333;
+        }
+
+        .led-off {
+            background: #333;
+        }
+
+        .led-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .led-text {
+            color: white;
+            font-weight: bold;
+        }
+
+        .status-text {
+            margin-top: 10px;
+            text-align: center;
+            font-size: 0.85em;
+            padding: 8px;
+            border-radius: 10px;
+        }
+
+        .status-text.success {
+            color: #00ff00;
+            background: rgba(0, 255, 0, 0.1);
+        }
+
+        .status-text.error {
+            color: #ff4444;
+            background: rgba(255, 0, 0, 0.1);
+        }
+
+        .info {
+            text-align: center;
+            color: #aaa;
+            font-size: 0.8em;
+            margin-top: 15px;
+        }
+
+        .footer {
+            text-align: center;
+            color: #666;
+            font-size: 0.7em;
         }
     </style>
 </head>
 <body>
-    <h1>💡 Contrôle LED ESP32</h1>
-    
-    <div>
-        <input type="text" id="espIP" placeholder="IP de l'ESP32">
-        <button onclick="connecter()">Connecter</button>
-    </div>
-    
-    <div id="controles" style="display: none;">
-        <button class="on" onclick="commander('allumer')">ALLUMER</button>
-        <button class="off" onclick="commander('eteindre')">ETEINDRE</button>
-        <p id="statut">Statut: ---</p>
+    <div class="container">
+        <h1>💡 ESP32 LED Control</h1>
+        <div class="subtitle">Contrôle à distance via WiFi</div>
+
+        <!-- Section connexion -->
+        <div class="card">
+            <h2>🔌 Connexion</h2>
+            <div class="ip-group">
+                <input type="text" id="ipInput" placeholder="192.168.1.XX" autocomplete="off">
+                <button id="connectBtn" class="btn btn-primary">Connecter</button>
+            </div>
+            <div id="connectionStatus" class="status-text"></div>
+        </div>
+
+        <!-- Section contrôle - TOUJOURS VISIBLE -->
+        <div id="controlPanel" class="card">
+            <h2>🎮 Contrôle LED</h2>
+            
+            <div class="led-container">
+                <div id="ledVisual" class="led led-off"></div>
+                <div id="ledText" class="led-text">⚪ ÉTEINTE</div>
+            </div>
+
+            <div class="button-group">
+                <button id="onBtn" class="btn btn-on">🟢 ALLUMER</button>
+                <button id="offBtn" class="btn btn-off">🔴 ÉTEINDRE</button>
+            </div>
+
+            <div class="info">
+                <span id="espIpDisplay"></span>
+            </div>
+        </div>
+
+        <div class="footer">
+            Assurez-vous que l'ESP32 est alimenté et sur le même réseau WiFi
+        </div>
     </div>
 
     <script>
-        let espIP = "";
+        // Éléments DOM
+        const ipInput = document.getElementById('ipInput');
+        const connectBtn = document.getElementById('connectBtn');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const onBtn = document.getElementById('onBtn');
+        const offBtn = document.getElementById('offBtn');
+        const ledVisual = document.getElementById('ledVisual');
+        const ledText = document.getElementById('ledText');
+        const espIpDisplay = document.getElementById('espIpDisplay');
 
-        function connecter() {
-            espIP = document.getElementById('espIP').value;
-            if(espIP) {
-                document.getElementById('controles').style.display = 'block';
-                verifierStatut();
+        let espIP = '';
+        let intervalVerification = null;
+
+        function setStatus(message, type) {
+            connectionStatus.textContent = message;
+            connectionStatus.className = 'status-text ' + type;
+        }
+
+        function updateLedDisplay(isOn) {
+            if (isOn) {
+                ledVisual.className = 'led led-on';
+                ledText.innerHTML = '🔴 ALLUMÉE';
+                ledText.style.color = '#ff6666';
+            } else {
+                ledVisual.className = 'led led-off';
+                ledText.innerHTML = '⚪ ÉTEINTE';
+                ledText.style.color = '#aaa';
             }
         }
 
-        function commander(action) {
-            fetch(`http://${espIP}/${action}`)
-                .then(() => verifierStatut())
-                .catch(() => alert("Erreur"));
+        async function checkLedStatus() {
+            if (!espIP) return false;
+            try {
+                const response = await fetch(`http://${espIP}/statut`);
+                const status = await response.text();
+                updateLedDisplay(status === 'ON');
+                return status === 'ON';
+            } catch (error) {
+                return false;
+            }
         }
 
-        function verifierStatut() {
-            fetch(`http://${espIP}/statut`)
-                .then(response => response.text())
-                .then(statut => {
-                    document.getElementById('statut').innerHTML = `Statut: ${statut === 'ON' ? '🟢 ALLUMÉE' : '🔴 ÉTEINTE'}`;
-                })
-                .catch(() => {});
+        async function sendCommand(action) {
+            if (!espIP) {
+                setStatus('Connectez-vous d\'abord à l\'ESP32', 'error');
+                return;
+            }
+            try {
+                const response = await fetch(`http://${espIP}/${action}`);
+                if (response.ok) {
+                    await checkLedStatus();
+                    setStatus(`Commande ${action} envoyée`, 'success');
+                }
+            } catch (error) {
+                setStatus(`Erreur: ESP32 non joignable`, 'error');
+            }
         }
+
+        async function connectToESP() {
+            const ip = ipInput.value.trim();
+            if (!ip) {
+                setStatus('Entrez une adresse IP', 'error');
+                return;
+            }
+
+            setStatus(`Connexion à ${ip}...`, 'info');
+            espIP = ip;
+
+            try {
+                const response = await fetch(`http://${espIP}/statut`);
+                if (response.ok) {
+                    setStatus(`✅ Connecté à ${ip}`, 'success');
+                    espIpDisplay.textContent = `ESP32 : ${ip}`;
+                    await checkLedStatus();
+                    
+                    if (intervalVerification) clearInterval(intervalVerification);
+                    intervalVerification = setInterval(checkLedStatus, 2000);
+                } else {
+                    throw new Error();
+                }
+            } catch (error) {
+                setStatus(`❌ Impossible de joindre ${ip}`, 'error');
+                espIP = '';
+                espIpDisplay.textContent = '';
+                updateLedDisplay(false);
+            }
+        }
+
+        // Événements
+        connectBtn.addEventListener('click', connectToESP);
+        onBtn.addEventListener('click', () => sendCommand('allumer'));
+        offBtn.addEventListener('click', () => sendCommand('eteindre'));
         
-        setInterval(verifierStatut, 2000);
+        ipInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') connectToESP();
+        });
     </script>
 </body>
 </html>
