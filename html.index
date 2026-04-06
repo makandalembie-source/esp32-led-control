@@ -1,97 +1,268 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>LED ESP32 - Contrôle à distance</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>ESP32 LED Control</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 30px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
             text-align: center;
-            margin-top: 50px;
+            color: white;
+            margin-bottom: 10px;
+            font-size: 2em;
+            text-shadow: 0 0 10px rgba(0,255,0,0.5);
+        }
+
+        .sous-titre {
+            text-align: center;
+            color: #aaa;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+
+        .ip-section {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .ip-section label {
+            color: white;
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .ip-input {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 15px;
             background: #1a1a2e;
             color: white;
-        }
-        button {
-            font-size: 24px;
-            padding: 15px 30px;
-            margin: 10px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-        }
-        .btn-on { background-color: #00ff00; color: black; }
-        .btn-off { background-color: #ff4444; color: white; }
-        input {
-            padding: 10px;
             font-size: 16px;
-            width: 200px;
-            margin: 20px;
+            border: 1px solid #333;
         }
-        .status {
-            font-size: 20px;
-            margin: 20px;
+
+        input:focus {
+            outline: none;
+            border-color: #00ff00;
+        }
+
+        .btn-connect {
+            background: #00ff00;
+            color: #000;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn-connect:active {
+            transform: scale(0.95);
+        }
+
+        .controles {
+            display: none;
+        }
+
+        .statut {
+            text-align: center;
+            padding: 15px;
+            border-radius: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            margin-bottom: 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .statut.on {
+            color: #00ff00;
+            text-shadow: 0 0 10px #00ff00;
+        }
+
+        .statut.off {
+            color: #ff4444;
+        }
+
+        .boutons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 20px 40px;
+            font-size: 1.5em;
+            border: none;
+            border-radius: 60px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+            min-width: 150px;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .btn-on {
+            background: linear-gradient(135deg, #00ff00, #008800);
+            color: white;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+        }
+
+        .btn-off {
+            background: linear-gradient(135deg, #ff4444, #880000);
+            color: white;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.3);
+        }
+
+        .info {
+            margin-top: 20px;
+            text-align: center;
+            color: #888;
+            font-size: 0.8em;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+            button {
+                padding: 15px 30px;
+                font-size: 1.2em;
+                min-width: 120px;
+            }
+            h1 {
+                font-size: 1.5em;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>💡 Contrôle LED ESP32</h1>
-    
-    <div>
-        <label>Adresse IP de l'ESP32 :</label>
-        <input type="text" id="espIP" placeholder="ex: 192.168.1.42">
-        <button onclick="connecterESP()">Connexion</button>
-    </div>
-    
-    <div id="controles" style="display: none;">
-        <div class="status" id="status">Statut : ---</div>
-        <button class="btn-on" onclick="commander('/allumer')">🔆 ALLUMER</button>
-        <button class="btn-off" onclick="commander('/eteindre')">🔴 ÉTEINDRE</button>
+    <div class="container">
+        <h1>💡 ESP32 LED Control</h1>
+        <div class="sous-titre">Contrôle à distance</div>
+
+        <div class="ip-section">
+            <label>📡 Adresse IP de l'ESP32</label>
+            <div class="ip-input">
+                <input type="text" id="espIP" placeholder="ex: 192.168.1.42">
+                <button class="btn-connect" onclick="connecter()">🔌 Connecter</button>
+            </div>
+        </div>
+
+        <div id="controles" class="controles">
+            <div class="statut off" id="statut">⚪ Statut : ÉTEINTE</div>
+            <div class="boutons">
+                <button class="btn-on" onclick="commander('allumer')">🟢 ALLUMER</button>
+                <button class="btn-off" onclick="commander('eteindre')">🔴 ÉTEINDRE</button>
+            </div>
+        </div>
+
+        <div class="info">
+            ⚡ Assurez-vous que l'ESP32 est connecté au même réseau WiFi
+        </div>
     </div>
 
     <script>
         let espIP = "";
+        let intervalStatut = null;
 
-        function connecterESP() {
-            espIP = document.getElementById('espIP').value;
-            if(espIP) {
-                document.getElementById('controles').style.display = 'block';
-                verifierStatut();
+        function connecter() {
+            espIP = document.getElementById('espIP').value.trim();
+            
+            if(espIP === "") {
+                alert("Entrez l'adresse IP de l'ESP32");
+                return;
             }
+
+            // Tester la connexion
+            fetch(`http://${espIP}/statut`)
+                .then(() => {
+                    document.getElementById('controles').style.display = 'block';
+                    document.querySelector('.ip-section').style.opacity = '0.7';
+                    demarrerVerification();
+                })
+                .catch(() => {
+                    alert(`❌ Impossible de se connecter à ${espIP}\nVérifiez l'adresse IP`);
+                });
         }
 
         function commander(action) {
-            fetch(`http://${espIP}${action}`)
-                .then(() => {
-                    const statusDiv = document.getElementById('status');
-                    if(action === '/allumer') {
-                        statusDiv.innerHTML = 'Statut : 🟢 ALLUMÉE';
-                        statusDiv.style.color = '#00ff00';
-                    } else {
-                        statusDiv.innerHTML = 'Statut : 🔴 ÉTEINTE';
-                        statusDiv.style.color = '#ff4444';
-                    }
-                })
-                .catch(err => console.log('Erreur:', err));
+            if(!espIP) return;
+            
+            fetch(`http://${espIP}/${action}`)
+                .catch(() => console.log("Erreur réseau"));
+            
+            // Mettre à jour l'affichage localement
+            const statutDiv = document.getElementById('statut');
+            if(action === 'allumer') {
+                statutDiv.innerHTML = '🟢 Statut : ALLUMÉE';
+                statutDiv.className = 'statut on';
+            } else {
+                statutDiv.innerHTML = '⚪ Statut : ÉTEINTE';
+                statutDiv.className = 'statut off';
+            }
         }
 
-        function verifierStatut() {
-            fetch(`http://${espIP}/statut`)
-                .then(response => response.text())
-                .then(statut => {
-                    const statusDiv = document.getElementById('status');
-                    if(statut === 'ON') {
-                        statusDiv.innerHTML = 'Statut : 🟢 ALLUMÉE';
-                        statusDiv.style.color = '#00ff00';
-                    } else {
-                        statusDiv.innerHTML = 'Statut : 🔴 ÉTEINTE';
-                        statusDiv.style.color = '#ff4444';
-                    }
-                })
-                .catch(err => console.log('Erreur:', err));
+        function demarrerVerification() {
+            if(intervalStatut) clearInterval(intervalStatut);
+            
+            intervalStatut = setInterval(() => {
+                fetch(`http://${espIP}/statut`)
+                    .then(response => response.text())
+                    .then(statut => {
+                        const statutDiv = document.getElementById('statut');
+                        if(statut === 'ON') {
+                            statutDiv.innerHTML = '🟢 Statut : ALLUMÉE';
+                            statutDiv.className = 'statut on';
+                        } else {
+                            statutDiv.innerHTML = '⚪ Statut : ÉTEINTE';
+                            statutDiv.className = 'statut off';
+                        }
+                    })
+                    .catch(() => {});
+            }, 2000);
         }
-        
-        // Vérifier le statut toutes les 3 secondes
-        setInterval(verifierStatut, 3000);
     </script>
 </body>
 </html>
